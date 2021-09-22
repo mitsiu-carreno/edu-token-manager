@@ -4,10 +4,10 @@
 #include <mysql.h>
 
 struct Student{
-  char * id;
+  int id;
   char *code;
   char *full_name;
-  char *current_token;
+  int current_token;
 };
 
 namespace students{

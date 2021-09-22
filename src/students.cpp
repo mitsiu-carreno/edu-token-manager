@@ -24,6 +24,32 @@ namespace students{
     return true;
   }
 
+  bool CheckIntegrity(MYSQL *conn, int id_student){
+    MYSQL_RES *res;
+    MYSQL_ROW row;
+    char query[400];
+    sprintf(query, "select if(current_token = (select start_token - (select count(*) from logs where id_student = %d) from students where id=%d), TRUE, FALSE)  from students where id = %d", id_student, id_student, id_student);
+    res = mysqlConn::Query(conn, query);
+    if(!res){
+      printw("Error interno; sin comprobar integridad\n");
+      getch();
+      return false;
+    }
+
+    row = mysql_fetch_row(res);
+    if(!row){
+      printw("Error interno; sin comprobar integridad\n");
+      getch();
+      return false;
+    }
+ 
+    bool result = row[0];
+    mysql_free_result(res);
+    return result;
+  }
+
+
+
   Student* AskVerification(MYSQL *conn, char code_input[5]){
     MYSQL_RES *res;
     MYSQL_ROW row;
@@ -43,18 +69,29 @@ namespace students{
     }
 
     Student *current_student = new (std::nothrow) Student;
-    current_student->id = row[0];
-    current_student->code = row[1];
-    current_student->full_name = row[2];
-    current_student->current_token = row[3];
-    //VALIDAR TOKENS VACIOS!!!
+    try{
+      current_student->id = std::stoi(row[0]);
+      current_student->code = row[1];
+      current_student->full_name = row[2];
+      current_student->current_token = std::stoi(row[3]);
+    }catch(std::exception const &e){
+      printw("Student info casting failed");
+      getch();
+    }
+    
+    mysql_free_result(res);
+    if(current_student->current_token <= 0){
+      printw("Parece que no tienes más tokens :(");
+      getch();
+      return nullptr;
+    }
+
     char confirmation [sizeof(row[4])];
     strcpy(confirmation, row[4]);
     clear();
     printw("\n\n");
-    printw("Bienvenid@ %s cuentas con %s tokens\n", current_student->full_name, current_student->current_token);
+    printw("Bienvenid@ %s cuentas con %d tokens\n", current_student->full_name, current_student->current_token);
     
-    mysql_free_result(res);
     char confirmation_input [sizeof(confirmation)];
 
     while(true){
@@ -65,11 +102,17 @@ namespace students{
         continue;
       }
 
-      //printw("%s - %s\n", confirmation, confirmation_input);
+      printw("%s - %s\n", confirmation, confirmation_input);
       if(confirmation_input[0] == 'S' && confirmation_input[1] == '\0'){
         return nullptr;
       }
       if(strcmp(confirmation, confirmation_input) == 0){
+        // Check data integrity
+        if(!CheckIntegrity(conn, current_student->id)){
+          printw("Datos corruptos x_x\n");
+          getch();
+        }
+
         printw("CORRECTO!\n");
         return current_student;
       }
