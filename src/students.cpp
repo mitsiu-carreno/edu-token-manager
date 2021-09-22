@@ -92,10 +92,10 @@ namespace students{
     mysql_free_result(res);
     clear();
     printw("\n\n");
-    printw("%s", current_student->full_name);
+    //printw("%s", current_student->full_name);
     printw("Bienvenid@ %s cuentas con %d tokens\n", current_student->full_name, current_student->current_token);
     
-    char confirmation_input [sizeof(confirmation)+1];
+    char confirmation_input [25];
 
     while(true){
     
@@ -111,7 +111,7 @@ namespace students{
         ++i;
       }
 
-      printw("%s - %s\n", confirmation, confirmation_input);
+      //printw("%s - %s\n", confirmation, confirmation_input);
       if((confirmation_input[0] == 'S' || confirmation_input[0] == 's') && confirmation_input[1] == '\0'){
         return nullptr;
       }
