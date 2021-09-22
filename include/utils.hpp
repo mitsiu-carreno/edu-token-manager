@@ -3,6 +3,7 @@
 
 namespace utils{
   short GetLength(char *);
+  int CharToInt(char *);
 }
 
 #endif

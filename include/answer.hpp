@@ -2,7 +2,7 @@
 #define ANSWER_H
 
 namespace answer{
-  void ShowAnswer(MYSQL*, short, short);
+  void ShowAnswer(MYSQL*, int, int);
 }
 
 #endif

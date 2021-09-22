@@ -7,7 +7,7 @@ struct Student{
   char * id;
   char *code;
   char *full_name;
-  char *current_token = nullptr;
+  char *current_token;
 };
 
 namespace students{

@@ -1,6 +1,7 @@
 /* Simple C program that connects to MySQL Database server*/
 #include "mysql_conn.hpp"
 #include "students.hpp"
+#include "answer.hpp"
 #include "utils.hpp"
 #include <ncurses.h>
 #include <string.h>
@@ -74,6 +75,8 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
+    answer::ShowAnswer(conn, 1, question_number);
+     
 
     delete current_student;
   }
