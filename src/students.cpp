@@ -1,3 +1,4 @@
+#include "constants.hpp"
 #include "mysql_conn.hpp"
 #include "utils.hpp"
 #include "students.hpp"
@@ -29,7 +30,7 @@ namespace students{
     MYSQL_RES *res;
     MYSQL_ROW row;
     char query[400];
-    sprintf(query, "select if(current_token = (select start_token - (select count(*) from logs where id_student = %d) from students where id=%d), TRUE, FALSE)  from students where id = %d", id_student, id_student, id_student);
+    sprintf(query, "select if(current_token_u%d = (select start_token_u%d - (select count(*) from logs where id_student = %d) from students where id=%d), TRUE, FALSE)  from students where id = %d", constants::KUnit, constants::KUnit, id_student, id_student, id_student);
     res = mysqlConn::Query(conn, query);
     if(!res){
       printw("Error interno; sin comprobar integridad\n");
@@ -55,7 +56,7 @@ namespace students{
     MYSQL_RES *res;
     MYSQL_ROW row;
     char query[100];
-    sprintf(query, "SELECT id, code, full_name, current_token, identity_confirmation FROM students WHERE code = '%s'", code_input);
+    sprintf(query, "SELECT id, code, full_name, current_token_u%d, identity_confirmation FROM students WHERE code = '%s'", constants::KUnit, code_input);
     res = mysqlConn::Query(conn, query);
     if(!res){
       printw("Error al solicitar confirmación");
@@ -141,8 +142,8 @@ namespace students{
   int ConfirmQuestion(MYSQL *conn, int question_number){
     MYSQL_RES *res;
     MYSQL_ROW row;
-    char query[69];
-    sprintf(query, "SELECT id, txt_question FROM answers WHERE num_question = %d", question_number);
+    char query[80];
+    sprintf(query, "SELECT id, txt_question FROM answers WHERE num_question = %d AND unit = %d", question_number, constants::KUnit);
     res = mysqlConn::Query(conn, query);
     if(!res){
       printw("Error al soliciar texto de pregunta :(");
@@ -169,8 +170,39 @@ namespace students{
   }
   
   int AskQuestionNum(MYSQL *conn, Student *current_student){
+    MYSQL_RES *res;
+    MYSQL_ROW row;
+    char query[80];
+    sprintf(query, "SELECT MIN(num_question), MAX(num_question) FROM answers WHERE unit = %d", constants::KUnit);
+    res = mysqlConn::Query(conn, query);
+    if(!res){
+      printw("Error al solicitar número de preguntas\n");
+      getch();
+      return 0;  
+    }
+
+    row = mysql_fetch_row(res);
+    if(!row){
+      printw("Error al obtener respuesta de número de preguntas");
+      getch();
+      return 0;
+    }
+    
+    int min_question_num;
+    int max_question_num;
+
+    try{
+      min_question_num = std::stoi(row[0]);
+      max_question_num = std::stoi(row[1]);
+    }catch(std::exception const &e){
+      printw("Error al castear número de preguntas\n");
+      getch();
+      return 0;
+    }
+
+    mysql_free_result(res);
     while(true){
-      printw("Ingresa el número de pregunta que quieres [1-17] [0 = Salir]: ");
+      printw("Ingresa el número de pregunta que quieres [%d-%d] [0 = Salir]: ", min_question_num, max_question_num);
       char question_input[3];
       getnstr(question_input, 2);
       int question_number = 0;
@@ -186,7 +218,7 @@ namespace students{
       if(question_number == 0){
         return 0;
       }
-      if(question_number >= 1 && question_number <= 17){
+      if(question_number >= min_question_num && question_number <= max_question_num){
         int id_question = ConfirmQuestion(conn, question_number);
         if(id_question){
           return id_question;
