@@ -1,6 +1,7 @@
 /* Simple C program that connects to MySQL Database server*/
 #include "mysql_conn.hpp"
 #include "students.hpp"
+#include "utils.hpp"
 #include <ncurses.h>
 #include <string.h>
 
@@ -42,6 +43,7 @@ int main(int argc, char *argv[]) {
     
     if(!students::GetCodes(conn)){
       printw("Error al solicitar códigos");
+      getch();
       return 0;
     }
     
@@ -50,20 +52,30 @@ int main(int argc, char *argv[]) {
     char code_input[kMaxInput];
     getnstr(code_input, kMaxInput-1);
 
-    if(strcmp(code_input, "oliv\0") == 0){
-      break;
-    }
-  
-    bool test = students::AskVerification(conn, code_input);
-    printw("%d",test);
-    getch();
+    utils::GetLength(code_input);
 
-    //if(students::AskVerification(conn, code_input)){
-    if(true){
+    if(utils::GetLength(code_input) < 3){
+      printw("Código no valido, enter para continuar");
+      getch();
       continue;
     }
-    printw("unreachable");
-    getch();
+
+    if(strcmp(code_input, "gtfo\0") == 0){
+      break;
+    }
+
+    Student* current_student = students::AskVerification(conn, code_input);
+    if(!current_student){
+      continue;
+    }
+
+    int question_number = students::AskQuestionNum(conn, current_student);
+    if(!question_number){
+      continue;
+    }
+
+
+    delete current_student;
   }
 
   mysqlConn::Disconnect(conn);

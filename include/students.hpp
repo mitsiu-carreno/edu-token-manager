@@ -3,10 +3,17 @@
 
 #include <mysql.h>
 
+struct Student{
+  char * id;
+  char *code;
+  char *full_name;
+  char *current_token = nullptr;
+};
+
 namespace students{
   bool GetCodes(MYSQL *);
-  bool AskVerification(MYSQL *, char [5]);
-  void AskQuestionNum(MYSQL *, char[5]);
+  Student* AskVerification(MYSQL *, char [5]);
+  int AskQuestionNum(MYSQL *, Student*);
 }
 
 #endif
