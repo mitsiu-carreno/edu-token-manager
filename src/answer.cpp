@@ -47,7 +47,7 @@ namespace answer{
 
     
 
-    printw("Respuesta: %s", row[0]);
+    printw("\n\nTienes %d tokens restantes\nRespuesta: %s", current_student->current_token-1, row[0]);
     printw("\nCopia esta respuesta y presiona cualquier tecla para finalizar\n");
     getch();
         

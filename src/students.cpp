@@ -1,6 +1,7 @@
 #include "mysql_conn.hpp"
 #include "utils.hpp"
 #include "students.hpp"
+#include <ctype.h> 
 #include <mysql.h>
 #include <string.h>
 #include <ncurses.h>
@@ -70,6 +71,7 @@ namespace students{
 
     Student *current_student = new (std::nothrow) Student;
     try{
+
       current_student->id = std::stoi(row[0]);
       current_student->code = row[1];
       current_student->full_name = row[2];
@@ -79,7 +81,6 @@ namespace students{
       getch();
     }
     
-    mysql_free_result(res);
     if(current_student->current_token <= 0){
       printw("Parece que no tienes más tokens :(");
       getch();
@@ -88,25 +89,43 @@ namespace students{
 
     char confirmation [sizeof(row[4])];
     strcpy(confirmation, row[4]);
+    mysql_free_result(res);
     clear();
     printw("\n\n");
+    printw("%s", current_student->full_name);
     printw("Bienvenid@ %s cuentas con %d tokens\n", current_student->full_name, current_student->current_token);
     
-    char confirmation_input [sizeof(confirmation)];
+    char confirmation_input [sizeof(confirmation)+1];
 
     while(true){
     
-      printw("\nPregunta de seguridad\nQué entidad elegiste para hacer tu tarea de tipos de variables? [S = Salir]: ");
-      getnstr(confirmation_input, sizeof(confirmation_input)-1);
+      printw("\nPregunta de seguridad\nQué entidad elegiste para hacer tu tarea de tipos de variables? [null = No Entregada, undefined = Multiples entidades, s = Salir]: ");
+      getnstr(confirmation_input, sizeof(confirmation_input));
       if(utils::GetLength(confirmation_input) == 0){
         continue;
       }
 
+      short i{0};
+      while(confirmation_input[i]){
+        confirmation_input[i] = (tolower(confirmation_input[i]));  
+        ++i;
+      }
+
       printw("%s - %s\n", confirmation, confirmation_input);
-      if(confirmation_input[0] == 'S' && confirmation_input[1] == '\0'){
+      if((confirmation_input[0] == 'S' || confirmation_input[0] == 's') && confirmation_input[1] == '\0'){
         return nullptr;
       }
-      if(strcmp(confirmation, confirmation_input) == 0){
+      i=0;
+      bool flag {true};
+      while(confirmation[i]){
+        if(confirmation[i] != confirmation_input[i]){
+          flag = false;
+          break;
+        }
+        ++i;
+      }
+
+      if(flag){
         // Check data integrity
         if(!CheckIntegrity(conn, current_student->id)){
           printw("Datos corruptos x_x\n");
@@ -172,7 +191,7 @@ namespace students{
         if(id_question){
           return id_question;
         }
-        return 0;
+        //continue;
       }
     }
   }
