@@ -1,0 +1,5 @@
+*.o
+bin/*
+!bin/.gitkeep
+.DS_Store
+*.swp
