@@ -30,7 +30,7 @@ namespace students{
     MYSQL_RES *res;
     MYSQL_ROW row;
     char query[400];
-    sprintf(query, "select if(current_token_u%d = (select start_token_u%d - (select count(*) from logs where id_student = %d) from students where id=%d), TRUE, FALSE)  from students where id = %d", constants::KUnit, constants::KUnit, id_student, id_student, id_student);
+    sprintf(query, "select if(current_token_u%d = (select start_token_u%d - (select count(*) from logs where id_student = %d) from students where id=%d), 1, 0) AS res  from students where id = %d", constants::KUnit, constants::KUnit, id_student, id_student, id_student);
     res = mysqlConn::Query(conn, query);
     if(!res){
       printw("Error interno; sin comprobar integridad\n");
@@ -44,8 +44,14 @@ namespace students{
       getch();
       return false;
     }
- 
-    bool result = row[0];
+
+    bool result {false};
+    try{
+       result = std::stoi(row[0]);
+    }catch(std::exception const &e){
+      printw("Error interno integridad");
+      getch();
+    }
     mysql_free_result(res);
     return result;
   }
@@ -131,6 +137,7 @@ namespace students{
         if(!CheckIntegrity(conn, current_student->id)){
           printw("Datos corruptos x_x\n");
           getch();
+          return nullptr;
         }
 
         printw("CORRECTO!\n");
