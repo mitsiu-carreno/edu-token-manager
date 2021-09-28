@@ -179,8 +179,8 @@ namespace students{
   int AskQuestionNum(MYSQL *conn, Student *current_student){
     MYSQL_RES *res;
     MYSQL_ROW row;
-    char query[80];
-    sprintf(query, "SELECT MIN(num_question), MAX(num_question) FROM answers WHERE unit = %d", constants::KUnit);
+    char query[90];
+    sprintf(query, "SELECT MIN(num_question), MAX(num_question) FROM answers WHERE unit = %d AND answer <> \"\"", constants::KUnit);
     res = mysqlConn::Query(conn, query);
     if(!res){
       printw("Error al solicitar número de preguntas\n");
