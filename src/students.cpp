@@ -26,6 +26,29 @@ namespace students{
     return true;
   }
 
+  void CheckIntegrity(MYSQL *conn){
+    clear();
+    MYSQL_RES *res;
+    MYSQL_ROW row;
+    char query[400];
+    sprintf(query, "SELECT code, IF( IFNULL(current_token_u1,0) = (IFNULL(start_token_u1,0) - IFNULL(token_used,0) ), 1, 0) AS checked FROM students LEFT JOIN (SELECT id_student, COUNT(*) AS token_used FROM logs GROUP BY id_student) AS logs on id_student = id HAVING checked = 0");
+    res = mysqlConn::Query(conn, query);
+    if(!res){
+      printw("Error interno; sin comprobar integridad total\n");
+      getch();
+      return;
+    }
+    
+    printw("Verificando integridad de registros\n\n");
+
+    while((row = mysql_fetch_row(res)) != NULL){
+      printw("Error de integridad -> %s\n", row[0]);
+    }
+
+    mysql_free_result(res);
+    return;
+  }
+
   bool CheckIntegrity(MYSQL *conn, int id_student){
     MYSQL_RES *res;
     MYSQL_ROW row;

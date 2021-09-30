@@ -65,6 +65,13 @@ int main(int argc, char *argv[]) {
       break;
     }
 
+    if(strcmp(code_input, "chek\0") == 0){
+      students::CheckIntegrity(conn);
+      printw("\nEnter para continuar");
+      getch();
+      continue;
+    }
+
     Student* current_student = students::AskVerification(conn, code_input);
     if(!current_student){
       continue;
