@@ -39,9 +39,18 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
+  const short kMaxInput = 5;
+  char mode_input[kMaxInput];
+  getnstr(mode_input, kMaxInput-1);
+  
+  const bool sudo_mode = strcmp(mode_input, "prof\0") == 0 ? 1 : 0;
+
   while(true){
     clear();
-    
+  
+    if(sudo_mode){
+      printw("PROF MODE\n");
+    }  
     if(!students::GetCodes(conn)){
       printw("Error al solicitar códigos");
       getch();
@@ -49,11 +58,8 @@ int main(int argc, char *argv[]) {
     }
     
     printw("Ingresa tu clave:");
-    const short kMaxInput = 5;
     char code_input[kMaxInput];
     getnstr(code_input, kMaxInput-1);
-
-    utils::GetLength(code_input);
 
     if(utils::GetLength(code_input) < 3){
       printw("Código no valido, enter para continuar");
@@ -72,12 +78,12 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    Student* current_student = students::AskVerification(conn, code_input);
+    Student* current_student = students::AskVerification(conn, code_input, sudo_mode);
     if(!current_student){
       continue;
     }
 
-    int question_number = students::AskQuestionNum(conn, current_student);
+    int question_number = students::AskQuestionNum(conn, current_student, sudo_mode);
     if(!question_number){
       continue;
     }

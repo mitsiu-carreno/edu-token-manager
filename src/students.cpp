@@ -15,6 +15,7 @@ namespace students{
 
     res = mysqlConn::Query(conn, "SELECT code FROM students");
     if(!res){
+      mysql_free_result(res);
       return false;
     }
 
@@ -31,9 +32,10 @@ namespace students{
     MYSQL_RES *res;
     MYSQL_ROW row;
     char query[400];
-    sprintf(query, "SELECT code, IF( IFNULL(current_token_u1,0) = (IFNULL(start_token_u1,0) - IFNULL(token_used,0) ), 1, 0) AS checked FROM students LEFT JOIN (SELECT id_student, COUNT(*) AS token_used FROM logs GROUP BY id_student) AS logs on id_student = id HAVING checked = 0");
+    sprintf(query, "SELECT code, IF( IFNULL(current_token_u%d,0) = (IFNULL(start_token_u%d,0) - IFNULL(token_used,0) ), 1, 0) AS checked FROM students LEFT JOIN (SELECT id_student, COUNT(*) AS token_used FROM logs WHERE unit = %d GROUP BY id_student) AS logs on id_student = id HAVING checked = 0", constants::KUnit, constants::KUnit, constants::KUnit);
     res = mysqlConn::Query(conn, query);
     if(!res){
+      mysql_free_result(res);
       printw("Error interno; sin comprobar integridad total\n");
       getch();
       return;
@@ -53,9 +55,10 @@ namespace students{
     MYSQL_RES *res;
     MYSQL_ROW row;
     char query[400];
-    sprintf(query, "select if(current_token_u%d = (select start_token_u%d - (select count(*) from logs where id_student = %d) from students where id=%d), 1, 0) AS res  from students where id = %d", constants::KUnit, constants::KUnit, id_student, id_student, id_student);
+    sprintf(query, "select if(current_token_u%d = (select start_token_u%d - (select count(*) from logs where id_student = %d AND unit = %d) from students where id=%d), 1, 0) AS res  from students where id = %d", constants::KUnit, constants::KUnit, id_student, constants::KUnit, id_student, id_student);
     res = mysqlConn::Query(conn, query);
     if(!res){
+      mysql_free_result(res);
       printw("Error interno; sin comprobar integridad\n");
       getch();
       return false;
@@ -63,6 +66,7 @@ namespace students{
 
     row = mysql_fetch_row(res);
     if(!row){
+      mysql_free_result(res);
       printw("Error interno; sin comprobar integridad\n");
       getch();
       return false;
@@ -81,19 +85,21 @@ namespace students{
 
 
 
-  Student* AskVerification(MYSQL *conn, char code_input[5]){
+  Student* AskVerification(MYSQL *conn, char code_input[5], bool sudo_mode){
     MYSQL_RES *res;
     MYSQL_ROW row;
-    char query[100];
-    sprintf(query, "SELECT id, code, full_name, current_token_u%d, identity_confirmation FROM students WHERE code = '%s'", constants::KUnit, code_input);
+    char query[120];
+    sprintf(query, "SELECT id, code, full_name, IFNULL(current_token_u%d,0), identity_confirmation FROM students WHERE code = '%s'", constants::KUnit, code_input);
     res = mysqlConn::Query(conn, query);
     if(!res){
+      mysql_free_result(res);
       printw("Error al solicitar confirmación");
       return nullptr;  
     }
 
     row = mysql_fetch_row(res);
     if(!row){
+      mysql_free_result(res);
       printw("Código invalido, enter para continuar\n");
       getch();
       return nullptr;
@@ -112,6 +118,7 @@ namespace students{
     }
     
     if(current_student->current_token <= 0){
+      mysql_free_result(res);
       printw("Parece que no tienes más tokens :(");
       getch();
       return nullptr;
@@ -125,6 +132,17 @@ namespace students{
     //printw("%s", current_student->full_name);
     printw("Bienvenid@ %s cuentas con %d tokens\n", current_student->full_name, current_student->current_token);
     
+    // Check data integrity
+    if(!CheckIntegrity(conn, current_student->id)){
+      printw("Datos corruptos x_x\n");
+      getch();
+      return nullptr;
+    }
+
+    if(sudo_mode){
+      return current_student;
+    }
+
     char confirmation_input [25];
 
     while(true){
@@ -156,12 +174,6 @@ namespace students{
       }
 
       if(flag){
-        // Check data integrity
-        if(!CheckIntegrity(conn, current_student->id)){
-          printw("Datos corruptos x_x\n");
-          getch();
-          return nullptr;
-        }
 
         printw("CORRECTO!\n");
         return current_student;
@@ -176,6 +188,7 @@ namespace students{
     sprintf(query, "SELECT id, txt_question FROM answers WHERE num_question = %d AND unit = %d", question_number, constants::KUnit);
     res = mysqlConn::Query(conn, query);
     if(!res){
+      mysql_free_result(res);
       printw("Error al soliciar texto de pregunta :(");
       return false;
     }
@@ -199,13 +212,18 @@ namespace students{
     return 0;
   }
   
-  int AskQuestionNum(MYSQL *conn, Student *current_student){
+  int AskQuestionNum(MYSQL *conn, Student *current_student, bool sudo_mode){
     MYSQL_RES *res;
     MYSQL_ROW row;
     char query[90];
-    sprintf(query, "SELECT MIN(num_question), MAX(num_question) FROM answers WHERE unit = %d AND answer <> \"\"", constants::KUnit);
+    if(sudo_mode){
+      sprintf(query, "SELECT MIN(num_question), MAX(num_question) FROM answers WHERE unit = %d AND answer = \"\"", constants::KUnit);
+    }else{
+      sprintf(query, "SELECT MIN(num_question), MAX(num_question) FROM answers WHERE unit = %d AND answer <> \"\"", constants::KUnit);
+    }
     res = mysqlConn::Query(conn, query);
     if(!res){
+      mysql_free_result(res);
       printw("Error al solicitar número de preguntas\n");
       getch();
       return 0;  
@@ -213,6 +231,7 @@ namespace students{
 
     row = mysql_fetch_row(res);
     if(!row){
+      mysql_free_result(res);
       printw("Error al obtener respuesta de número de preguntas");
       getch();
       return 0;
@@ -225,6 +244,7 @@ namespace students{
       min_question_num = std::stoi(row[0]);
       max_question_num = std::stoi(row[1]);
     }catch(std::exception const &e){
+      mysql_free_result(res);
       printw("Error al castear número de preguntas\n");
       getch();
       return 0;

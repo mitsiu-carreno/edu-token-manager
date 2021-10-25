@@ -13,8 +13,8 @@ struct Student{
 namespace students{
   bool GetCodes(MYSQL *);
   void CheckIntegrity(MYSQL *);
-  Student* AskVerification(MYSQL *, char [5]);
-  int AskQuestionNum(MYSQL *, Student*);
+  Student* AskVerification(MYSQL *, char [5], bool);
+  int AskQuestionNum(MYSQL *, Student*, bool);
 }
 
 #endif
